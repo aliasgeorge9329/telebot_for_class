@@ -15,6 +15,7 @@ my_secret = os.environ['API'].strip()
 groupid = os.environ['__groupid__'].strip()
 googleSheetId_attendance = os.environ['Attendance'].strip()
 googleSheetId_images = os.environ['Images'].strip()
+googleSheetId_holiday = os.environ['Holiday'].strip()
 api_url_telegram = "https://api.telegram.org/bot"+my_secret+"/sendMessage?chat_id="+groupid+"&text="
 
 
@@ -32,15 +33,13 @@ def time_table():
     for each_slot in data:
         if str(each_slot[now_day]) != 'nan':
             time_ = each_slot[now_day].split("/")[1].strip()
-            hr = f'{int(time_.split(":")[0]):02d}:{int(time_.split(":")[0])}'
             correct_time = str((dt.datetime.strptime(time_, "%H:%M") - dt.datetime.strptime('05:30', "%H:%M")))
             hr = f'{int(correct_time.split(":")[0]):02d}'
             time_ = f'{hr}:{correct_time.split(":")[1]}'
-            exec(f'schedule.every().{now_day.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}")).tag("attendance")')
-    # print('reseted')            
+            exec(f'schedule.every().{now_day.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{each_slot[now_day].split("/")[2].strip()}")).tag("attendance")')
+
 
 # Updating timetable and checking before each session
-
 def schedule_timetable():
     schedule.every().day.at("02:29").do(time_table).tag("timetable")
     schedule.every().day.at("03:29").do(time_table).tag("timetable")
@@ -53,21 +52,26 @@ def schedule_timetable():
     schedule.every().day.at("11:29").do(time_table).tag("timetable")
     schedule.every().day.at("12:29").do(time_table).tag("timetable")
 
+
 time_table()
 schedule_timetable()  
+
 
 def cancel_all():
     schedule.clear('attendance')
     schedule.clear('timetable')
 
+
 def schedule_all():
     time_table()
     schedule_timetable()    
-    
+
+
 # Function to sent any message
 def send_message_telegram(message):
     final_telegram_url = api_url_telegram + message
     requests.get(final_telegram_url) 
+
 
 # Function to greet goodmorning with random images from google drive    
 def good_morning():
@@ -79,7 +83,7 @@ def good_morning():
     URL = "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}".format(googleSheetId_images, worksheetName)
     data_list = list(pd.read_csv(URL)["FILE ID"])
 
-    if no == "53":
+    if no == "100":
         with open("no.txt", "w") as f:
             f.write("0")
     
@@ -99,13 +103,33 @@ def good_morning():
     }
     requests.get(f"https://api.telegram.org/bot"+my_secret+"/sendPhoto?chat_id="+groupid+"&caption=Good Morning!", files=files)
     os.remove("sample_image.png")
-    time_table()
+    if_holiday()
 
-# Function to pass attendance message  
-def attendance(sub):
-    final_telegram_url = api_url_telegram + 'Guys Mark attendance for ' + sub
+
+# checking for whether today is holiday from google sheet
+def if_holiday():
+    now = dt.datetime.now(IST)
+    now_day = now.strftime("%d/%m/%y")
+    worksheet = 'holiday'
+    URL_holiday = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(
+        googleSheetId_holiday, worksheet)
+    data_list = pd.read_csv(URL_holiday)
+    new_sorted_date = list(data_list[['HOLIDAY']])
+    if_today_is = False
+    for date_ in new_sorted_date:
+        if str(date_) == now_day and str(date_) != 'nan':
+            cancel_all()
+
+    time_table()
+    schedule_timetable()
+
+
+# Function to pass attendance message
+def attendance(sub, url_):
+    final_telegram_url = api_url_telegram + 'Guys Mark attendance for ' + sub + f'\n{url_}'
     requests.get(final_telegram_url)
- 
+
+
 # schedule for goodmorning function
 schedule.every().day.at("00:30").do(good_morning).tag("goodmorning")
 
@@ -115,17 +139,21 @@ schedule.every().day.at("00:30").do(good_morning).tag("goodmorning")
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logging.info('Starting Bot...')
 
+
 def resettimetable(bot, context):
     time_table()
-    bot.message.reply_text( f'✨  Hello,  {(bot.message.from_user.first_name)}\nTimetable Reset Successfully ✅')
+    bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nTimetable Reset Successfully ✅')
+
 
 def cancelall(bot, context):
     cancel_all()
-    bot.message.reply_text( f'✨  Hello,  {(bot.message.from_user.first_name)}\nCancelled all Successfully 👍')
+    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nCancelled all Successfully 👍')
+
 
 def scheduleall(bot, context):
     schedule_all()
-    bot.message.reply_text( f'✨  Hello,  {(bot.message.from_user.first_name)}\nScheduled all 👍')
+    bot.message.reply_text(f'🌟  Hello,  {(bot.message.from_user.first_name)}\nScheduled all 👍')
+
 
 def error(update, context):
     # Logs errors
