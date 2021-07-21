@@ -123,6 +123,7 @@ def if_holiday():
 
     if if_today_is_holiday:
         cancel_all()
+
         if now.strftime("%H:%M") == '00:00':
             data_dict = list(holiday_dates_list.to_dict(orient="records"))[dates.index(now_day)]
             file_id_holiday = data_dict['FILEID']
@@ -161,7 +162,7 @@ def attendance(sub, url_):
 
 # schedule for goodmorning function
 schedule.every().day.at("00:30").do(good_morning).tag("goodmorning")
-schedule.every().day.at("18:30").do(good_morning).tag("if_holiday")
+schedule.every().day.at("18:30").do(if_holiday).tag("if_holiday")
 
 
 # Bot to receive commands
