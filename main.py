@@ -36,7 +36,7 @@ def time_table():
             correct_time = str((dt.datetime.strptime(time_, "%H:%M") - dt.datetime.strptime('05:30', "%H:%M")))
             hr = f'{int(correct_time.split(":")[0]):02d}'
             time_ = f'{hr}:{correct_time.split(":")[1]}'
-            exec(f'schedule.every().{now_day.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{each_slot[now_day].split("/")[2].strip()}")).tag("attendance")')
+            exec(f'schedule.every().{now_day.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("/")[2:]).strip()}")).tag("attendance")')
 
 
 # Updating timetable and checking before each session
@@ -52,9 +52,6 @@ def schedule_timetable():
     schedule.every().day.at("11:29").do(time_table).tag("timetable")
     schedule.every().day.at("12:29").do(time_table).tag("timetable")
 
-
-time_table()
-schedule_timetable()  
 
 
 def cancel_all():
@@ -106,29 +103,36 @@ def good_morning():
     if_holiday()
 
 
+if_today_is_holiday = False
+
 # checking for whether today is holiday from google sheet
 def if_holiday():
+    global if_today_is_holiday
+    if_today_is_holiday = False
     now = dt.datetime.now(IST)
     now_day = now.strftime("%d/%m/%y")
     worksheet = 'holiday'
     URL_holiday = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(
         googleSheetId_holiday, worksheet)
-    data_list = pd.read_csv(URL_holiday)
-    new_sorted_date = list(data_list[['HOLIDAY']])
-    if_today_is = False
-    for date_ in new_sorted_date:
-        if str(date_) == now_day and str(date_) != 'nan':
-            cancel_all()
+    dates = list(pd.read_csv(URL_holiday)["HOLIDAY"])
+    for now_day in dates:
+        if_today_is_holiday = True
 
-    time_table()
-    schedule_timetable()
+    if if_today_is_holiday:
+      cancel_all()
+    else:
+      time_table()
+      schedule_timetable()
 
+if_holiday()
 
 # Function to pass attendance message
 def attendance(sub, url_):
-    final_telegram_url = api_url_telegram + 'Guys Mark attendance for ' + sub + f'\n{url_}'
+    if url_ != '':
+      final_telegram_url = api_url_telegram + 'Guys Mark attendance for ' + sub + f'\n👇\n{url_}'
+    else:
+      final_telegram_url = api_url_telegram + 'Guys Mark attendance for ' + sub + f'\n👇\nhttps://eduserver.nitc.ac.in/'
     requests.get(final_telegram_url)
-
 
 # schedule for goodmorning function
 schedule.every().day.at("00:30").do(good_morning).tag("goodmorning")
@@ -140,19 +144,30 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logging.info('Starting Bot...')
 
 
-def resettimetable(bot, context):
-    time_table()
-    bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nTimetable Reset Successfully ✅')
+def reset_attendance_reminder(bot, context):
+    global if_today_is_holiday
+    if if_today_is_holiday:
+        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as today is Holiday ❌')
+    else:
+        time_table()
+        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nAttendance Reminder Schedule Reset Successfully ✅')
 
+def resetall(bot, context):
+    if_holiday()
+    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Holiday status Successfully 👍\n2. Attendance Reminder Schedule Successfully 👍\n3. Scheduled Timetable Alternative check Successfully 👍')
 
 def cancelall(bot, context):
     cancel_all()
-    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nCancelled all Successfully 👍')
+    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nCancelled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
 
 
 def scheduleall(bot, context):
-    schedule_all()
-    bot.message.reply_text(f'🌟  Hello,  {(bot.message.from_user.first_name)}\nScheduled all 👍')
+    global if_today_is_holiday
+    if if_today_is_holiday:
+        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Schedule all as today is Holiday ❌')
+    else:
+        schedule_all()
+        bot.message.reply_text(f'🌟  Hello,  {(bot.message.from_user.first_name)}\nScheduled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
 
 
 def error(update, context):
@@ -165,7 +180,8 @@ def boot():
     dp = updater.dispatcher
 
     # Commands
-    dp.add_handler(CommandHandler('reset9329', resettimetable))
+    dp.add_handler(CommandHandler('resetattendance9329', reset_attendance_reminder))
+    dp.add_handler(CommandHandler('resetall9329', resetall))
     dp.add_handler(CommandHandler('cancelall9329', cancelall))
     dp.add_handler(CommandHandler('scheduleall9329', scheduleall))
 
