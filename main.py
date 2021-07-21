@@ -123,25 +123,26 @@ def if_holiday():
 
     if if_today_is_holiday:
         cancel_all()
-
         if now.strftime("%H:%M") == '00:00':
-          data_dict = list(holiday_dates_list.to_dict(orient="records"))[dates.index(now_day)]
-          file_id_holiday = data_dict['FILEID']
-          caption = data_dict['CAPTION']
-          if str(file_id_holiday) != 'nan':
-            if str(caption) == 'nan':
-                caption = ''
-            url = 'https://drive.google.com/uc?id=' + file_id_holiday.split('/')[5]
-            page = requests.get(url)
-            file = open("sample_image.png", "wb")
-            file.write(page.content)
-            file.close()
-            files = {
-                'photo': open("sample_image.png", "rb")
-            }
-            requests.get(f"https://api.telegram.org/bot" + my_secret + "/sendPhoto?chat_id=" + groupid + f"&caption={caption}", files=files)
-            os.remove("sample_image.png")
-        
+            data_dict = list(holiday_dates_list.to_dict(orient="records"))[dates.index(now_day)]
+            file_id_holiday = data_dict['FILEID']
+            caption = data_dict['CAPTION']
+            if str(file_id_holiday) != 'nan':
+                if str(caption) == 'nan':
+                    caption = ''
+                url = 'https://drive.google.com/uc?id=' + file_id_holiday.split('/')[5]
+                page = requests.get(url)
+                file = open("sample_image.png", "wb")
+                file.write(page.content)
+                file.close()
+                files = {
+                    'photo': open("sample_image.png", "rb")
+                }
+                requests.get(
+                    f"https://api.telegram.org/bot" + my_secret + "/sendPhoto?chat_id=" + groupid + f"&caption={caption}",
+                    files=files)
+                os.remove("sample_image.png")
+
     else:
         time_table()
         schedule_timetable()
