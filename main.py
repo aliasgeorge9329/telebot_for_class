@@ -36,8 +36,11 @@ def time_table():
             correct_time = str((dt.datetime.strptime(time_, "%H:%M") - dt.datetime.strptime('05:30', "%H:%M")))
             hr = f'{int(correct_time.split(":")[0]):02d}'
             time_ = f'{hr}:{correct_time.split(":")[1]}'
-            exec(f'schedule.every().{now_day.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("/")[2:]).strip()}")).tag("attendance")')
-
+            if len(each_slot[now_day].split("/")) == 2:
+                exec(f'schedule.every().{now_day.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","")).tag("attendance")')
+            else:
+                exec(f'schedule.every().{now_day.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("/")[2:]).strip()}")).tag("attendance")')
+                
 
 # Updating timetable and checking before each session
 def schedule_timetable():
@@ -51,7 +54,6 @@ def schedule_timetable():
     schedule.every().day.at("10:29").do(time_table).tag("timetable")
     schedule.every().day.at("11:29").do(time_table).tag("timetable")
     schedule.every().day.at("12:29").do(time_table).tag("timetable")
-
 
 
 def cancel_all():
@@ -100,10 +102,10 @@ def good_morning():
     }
     requests.get(f"https://api.telegram.org/bot"+my_secret+"/sendPhoto?chat_id="+groupid+"&caption=Good Morning!", files=files)
     os.remove("sample_image.png")
-    if_holiday()
 
 
 if_today_is_holiday = False
+
 
 # checking for whether today is holiday from google sheet
 def if_holiday():
@@ -114,16 +116,37 @@ def if_holiday():
     worksheet = 'holiday'
     URL_holiday = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(
         googleSheetId_holiday, worksheet)
-    dates = list(pd.read_csv(URL_holiday)["HOLIDAY"])
-    for now_day in dates:
+    holiday_dates_list = pd.read_csv(URL_holiday)
+    dates = list(holiday_dates_list["HOLIDAY"])
+    if now_day in dates:
         if_today_is_holiday = True
 
     if if_today_is_holiday:
-      cancel_all()
-    else:
-      time_table()
-      schedule_timetable()
+        cancel_all()
 
+        if now.strftime("%H:%M") == '00:00':
+          data_dict = list(holiday_dates_list.to_dict(orient="records"))[dates.index(now_day)]
+          file_id_holiday = data_dict['FILEID']
+          caption = data_dict['CAPTION']
+          if str(file_id_holiday) != 'nan':
+            if str(caption) == 'nan':
+                caption = ''
+            url = 'https://drive.google.com/uc?id=' + file_id_holiday.split('/')[5]
+            page = requests.get(url)
+            file = open("sample_image.png", "wb")
+            file.write(page.content)
+            file.close()
+            files = {
+                'photo': open("sample_image.png", "rb")
+            }
+            requests.get(f"https://api.telegram.org/bot" + my_secret + "/sendPhoto?chat_id=" + groupid + f"&caption={caption}", files=files)
+            os.remove("sample_image.png")
+        
+    else:
+        time_table()
+        schedule_timetable()
+
+#For checking at the time of deploying
 if_holiday()
 
 # Function to pass attendance message
@@ -134,8 +157,10 @@ def attendance(sub, url_):
       final_telegram_url = api_url_telegram + 'Guys Mark attendance for ' + sub + f'\n👇\nhttps://eduserver.nitc.ac.in/'
     requests.get(final_telegram_url)
 
+
 # schedule for goodmorning function
 schedule.every().day.at("00:30").do(good_morning).tag("goodmorning")
+schedule.every().day.at("18:30").do(good_morning).tag("if_holiday")
 
 
 # Bot to receive commands
@@ -190,7 +215,7 @@ def boot():
 
     # Run the bot
     updater.start_polling(1.0)
-    updater.idle()
+    # updater.idle()
 
 
 # Loop to check the pending schedule
