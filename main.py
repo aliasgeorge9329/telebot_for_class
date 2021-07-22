@@ -8,6 +8,7 @@ import pytz
 from telegram.ext import *
 import threading
 import logging
+import json
 IST = pytz.timezone('Asia/Kolkata')
 
 # Secrets for the program
@@ -17,7 +18,7 @@ googleSheetId_attendance = os.environ['Attendance'].strip()
 googleSheetId_images = os.environ['Images'].strip()
 googleSheetId_holiday = os.environ['Holiday'].strip()
 api_url_telegram = "https://api.telegram.org/bot"+my_secret+"/sendMessage?chat_id="+groupid+"&text="
-
+api_url_attendance_telegram = "https://api.telegram.org/bot"+my_secret+"/sendMessage"
 
 # Timetable fetching and scheduling function
 def time_table():
@@ -34,12 +35,20 @@ def time_table():
         if str(each_slot[now_day]) != 'nan':
             time_ = each_slot[now_day].split("/")[1].strip()
             correct_time = str((dt.datetime.strptime(time_, "%H:%M") - dt.datetime.strptime('05:30', "%H:%M")))
-            hr = f'{int(correct_time.split(":")[0]):02d}'
-            time_ = f'{hr}:{correct_time.split(":")[1]}'
-            if len(each_slot[now_day].split("/")) == 2:
-                exec(f'schedule.every().{now_day.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","")).tag("attendance")')
+            # For correcting UTC at 00:00 otherwise -1day,18:30
+            if len(correct_time.split(',')) != 2:
+                day_ = now_day
+                hr = f'{int(correct_time.split(":")[0]):02d}'
+                time_ = f'{hr}:{correct_time.split(":")[1]}'
             else:
-                exec(f'schedule.every().{now_day.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("/")[2:]).strip()}")).tag("attendance")')
+                day_ = (now-dt.timedelta(days=1)).strftime('%A')
+                hr = f'{int(correct_time.split(",")[1].split(":")[0]):02d}'
+                time_ = f'{hr}:{correct_time.split(",")[1].split(":")[1]}'
+
+            if len(each_slot[now_day].split("/")) == 2:
+                exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","")).tag("attendance")')
+            else:
+                exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("/")[2:]).strip()}")).tag("attendance")')
                 
 
 # Updating timetable and checking before each session
@@ -76,8 +85,8 @@ def send_message_telegram(message):
 def good_morning():
     global googleSheetId_images
     with open("no.txt", "r") as file:
-      data = file.readlines()
-      no = data[0]
+        data = file.readlines()
+        no = data[0]
     worksheetName = 'images_url'
     URL = "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}".format(googleSheetId_images, worksheetName)
     data_list = list(pd.read_csv(URL)["FILE ID"])
@@ -114,8 +123,7 @@ def if_holiday():
     now = dt.datetime.now(IST)
     now_day = now.strftime("%d/%m/%y")
     worksheet = 'holiday'
-    URL_holiday = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(
-        googleSheetId_holiday, worksheet)
+    URL_holiday = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(googleSheetId_holiday, worksheet)
     holiday_dates_list = pd.read_csv(URL_holiday)
     dates = list(holiday_dates_list["HOLIDAY"])
     if now_day in dates:
@@ -151,13 +159,21 @@ def if_holiday():
 #For checking at the time of deploying
 if_holiday()
 
+
 # Function to pass attendance message
 def attendance(sub, url_):
     if url_ != '':
-      final_telegram_url = api_url_telegram + 'Guys Mark attendance for ' + sub + f'\n👇\n{url_}'
+        pass
     else:
-      final_telegram_url = api_url_telegram + 'Guys Mark attendance for ' + sub + f'\n👇\nhttps://eduserver.nitc.ac.in/'
-    requests.get(final_telegram_url)
+        url_ = 'https://eduserver.nitc.ac.in/'
+    
+    params = {
+        'chat_id': '-1001576827434',
+        'parse_mode': 'HTML',
+        'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
+        'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Click Here For The Link!'}]]}, separators=(',', ':'))
+    } 
+    requests.get(api_url_attendance_telegram, params=params)
 
 
 # schedule for goodmorning function
@@ -222,9 +238,9 @@ def boot():
 
 # Loop to check the pending schedule
 def loop_():
-  while True:
-    schedule.run_pending()
-    time.sleep(1)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
   
 
 if __name__ == "__main__":
