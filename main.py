@@ -62,7 +62,6 @@ def schedule_timetable():
     schedule.every().day.at("09:29").do(time_table).tag("timetable")
     schedule.every().day.at("10:29").do(time_table).tag("timetable")
     schedule.every().day.at("11:29").do(time_table).tag("timetable")
-    schedule.every().day.at("12:29").do(time_table).tag("timetable")
 
 
 def cancel_all():
