@@ -67,10 +67,10 @@ def schedule_timetable():
 def start_all():
     global Cancel_Attendance_Remainder_Status
     Cancel_Attendance_Remainder_Status = False
-    if_holiday()
     # schedule for if_holiday function
     schedule.clear('if_holiday')
     schedule.every().day.at("18:30").do(if_holiday).tag("if_holiday")
+    if_holiday()
 
 
 def stop_all():
@@ -91,6 +91,8 @@ def cancel_all():
 def schedule_all():
     global Cancel_Attendance_Remainder_Status
     Cancel_Attendance_Remainder_Status = False
+    schedule.clear('attendance')
+    schedule.clear('timetable')
     time_table()
     schedule_timetable()    
 
