@@ -65,12 +65,16 @@ def schedule_timetable():
 
 
 def start_all():
+    global Cancel_Attendance_Remainder_Status
+    Cancel_Attendance_Remainder_Status = False
     if_holiday()
     # schedule for if_holiday function
     schedule.every().day.at("18:30").do(if_holiday).tag("if_holiday")
 
 
 def stop_all():
+    global Cancel_Attendance_Remainder_Status
+    Cancel_Attendance_Remainder_Status = False
     cancel_all()
     schedule.clear('if_holiday')
     schedule.clear('goodmorning')
@@ -139,6 +143,8 @@ def if_holiday():
     # Resetting history
     if_today_is_holiday = False
     schedule.clear('goodmorning')
+    schedule.clear('attendance')
+    schedule.clear('timetable')
     now = dt.datetime.now(IST)
     now_day = now.strftime("%d/%m/%y")
     worksheet = 'holiday'
@@ -205,9 +211,11 @@ logging.info('Starting Bot...')
 
 
 def reset_attendance_reminder(bot, context):
-    global if_today_is_holiday
+    global if_today_is_holiday, Cancel_Attendance_Remainder_Status
     if if_today_is_holiday:
         bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as today is Holiday ❌')
+    elif Cancel_Attendance_Remainder_Status:
+        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Cancel all function is Activated ❌')
     else:
         time_table()
         bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nAttendance Reminder Schedule Reset Successfully ✅')
@@ -224,8 +232,11 @@ def stopall(bot, context):
 
 
 def resetall(bot, context):
-    if_holiday()
-    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Holiday status Successfully 👍\n2. Attendance Reminder Schedule Successfully 👍\n3. Scheduled Timetable Alternative check Successfully 👍')
+    if Cancel_Attendance_Remainder_Status:
+        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Cancel all function is Activated ❌')
+    else:
+        if_holiday()
+        bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Holiday status Successfully 👍\n2. Attendance Reminder Schedule Successfully 👍\n3. Scheduled Timetable Alternative check Successfully 👍')
 
 
 def cancelall(bot, context):
