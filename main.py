@@ -53,6 +53,7 @@ def time_table():
 
 # Updating timetable and checking before each session
 def schedule_timetable():
+    schedule.clear('timetable')
     schedule.every().day.at("02:29").do(time_table).tag("timetable")
     schedule.every().day.at("03:29").do(time_table).tag("timetable")
     schedule.every().day.at("04:44").do(time_table).tag("timetable")
@@ -91,8 +92,6 @@ def cancel_all():
 def schedule_all():
     global Cancel_Attendance_Remainder_Status
     Cancel_Attendance_Remainder_Status = False
-    schedule.clear('attendance')
-    schedule.clear('timetable')
     time_table()
     schedule_timetable()    
 
