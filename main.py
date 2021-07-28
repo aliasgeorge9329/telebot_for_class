@@ -64,6 +64,18 @@ def schedule_timetable():
     schedule.every().day.at("11:29").do(time_table).tag("timetable")
 
 
+def start_all():
+    if_holiday()
+    # schedule for if_holiday function
+    schedule.every().day.at("18:30").do(if_holiday).tag("if_holiday")
+
+
+def stop_all():
+    cancel_all()
+    schedule.clear('if_holiday')
+    schedule.clear('goodmorning')
+
+
 def cancel_all():
     schedule.clear('attendance')
     schedule.clear('timetable')
@@ -118,7 +130,9 @@ if_today_is_holiday = False
 # checking for whether today is holiday from google sheet
 def if_holiday():
     global if_today_is_holiday
+    # Resetting history
     if_today_is_holiday = False
+    schedule.clear('goodmorning')
     now = dt.datetime.now(IST)
     now_day = now.strftime("%d/%m/%y")
     worksheet = 'holiday'
@@ -154,9 +168,8 @@ def if_holiday():
     else:
         time_table()
         schedule_timetable()
-
-#For checking at the time of deploying
-if_holiday()
+        # schedule for goodmorning function
+        schedule.every().day.at("00:30").do(good_morning).tag("goodmorning")
 
 
 # Function to pass attendance message
@@ -175,10 +188,8 @@ def attendance(sub, url_):
     requests.get(api_url_attendance_telegram, params=params)
 
 
-# schedule for goodmorning function
-schedule.every().day.at("00:30").do(good_morning).tag("goodmorning")
-schedule.every().day.at("18:30").do(if_holiday).tag("if_holiday")
-
+# For starting functions at the time of Deploying
+start_all()
 
 # Bot to receive commands
 # Set up the logging
@@ -194,9 +205,21 @@ def reset_attendance_reminder(bot, context):
         time_table()
         bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nAttendance Reminder Schedule Reset Successfully ✅')
 
+
+def startall(bot, context):
+    start_all()
+    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Program all started Successfully 👍')
+
+
+def stopall(bot, context):
+    stop_all()
+    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Program all stopped Successfully 👍')
+
+
 def resetall(bot, context):
     if_holiday()
     bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Holiday status Successfully 👍\n2. Attendance Reminder Schedule Successfully 👍\n3. Scheduled Timetable Alternative check Successfully 👍')
+
 
 def cancelall(bot, context):
     cancel_all()
@@ -223,6 +246,8 @@ def boot():
 
     # Commands
     dp.add_handler(CommandHandler('resetattendance9329', reset_attendance_reminder))
+    dp.add_handler(CommandHandler('start9329', startall))
+    dp.add_handler(CommandHandler('stop9329', stopall))
     dp.add_handler(CommandHandler('resetall9329', resetall))
     dp.add_handler(CommandHandler('cancelall9329', cancelall))
     dp.add_handler(CommandHandler('scheduleall9329', scheduleall))
