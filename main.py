@@ -77,11 +77,15 @@ def stop_all():
 
 
 def cancel_all():
+    global Cancel_Attendance_Remainder_Status
+    Cancel_Attendance_Remainder_Status = True
     schedule.clear('attendance')
     schedule.clear('timetable')
 
 
 def schedule_all():
+    global Cancel_Attendance_Remainder_Status
+    Cancel_Attendance_Remainder_Status = False
     time_table()
     schedule_timetable()    
 
@@ -124,12 +128,14 @@ def good_morning():
     os.remove("sample_image.png")
 
 
+# Default value
 if_today_is_holiday = False
+Cancel_Attendance_Remainder_Status = False
 
 
 # checking for whether today is holiday from google sheet
 def if_holiday():
-    global if_today_is_holiday
+    global if_today_is_holiday, Cancel_Attendance_Remainder_Status
     # Resetting history
     if_today_is_holiday = False
     schedule.clear('goodmorning')
@@ -166,10 +172,11 @@ def if_holiday():
                 os.remove("sample_image.png")
 
     else:
-        time_table()
-        schedule_timetable()
         # schedule for goodmorning function
         schedule.every().day.at("00:30").do(good_morning).tag("goodmorning")
+        if not Cancel_Attendance_Remainder_Status:
+            time_table()
+            schedule_timetable()
 
 
 # Function to pass attendance message
