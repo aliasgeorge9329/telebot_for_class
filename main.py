@@ -69,6 +69,7 @@ def start_all():
     Cancel_Attendance_Remainder_Status = False
     if_holiday()
     # schedule for if_holiday function
+    schedule.clear('if_holiday')
     schedule.every().day.at("18:30").do(if_holiday).tag("if_holiday")
 
 
