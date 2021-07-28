@@ -208,12 +208,12 @@ def reset_attendance_reminder(bot, context):
 
 def startall(bot, context):
     start_all()
-    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Program all started Successfully 👍')
+    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nProgram all started Successfully 👍')
 
 
 def stopall(bot, context):
     stop_all()
-    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Program all stopped Successfully 👍')
+    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nProgram all stopped Successfully 👍')
 
 
 def resetall(bot, context):
