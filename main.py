@@ -80,9 +80,10 @@ def stop_all():
     global Cancel_Attendance_Remainder_Status, Stop_All_Status
     Cancel_Attendance_Remainder_Status = False
     Stop_All_Status = True
-    cancel_all()
     schedule.clear('if_holiday')
     schedule.clear('goodmorning')
+    schedule.clear('attendance')
+    schedule.clear('timetable')
 
 
 def cancel_all():
@@ -251,8 +252,7 @@ def resetall(bot, context):
 
 def cancelall(bot, context):
     if Stop_All_Status:
-        bot.message.reply_text(
-            f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
+        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
     else:
         cancel_all()
         bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nCancelled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
