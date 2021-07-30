@@ -20,6 +20,7 @@ googleSheetId_holiday = os.environ['Holiday'].strip()
 api_url_telegram = "https://api.telegram.org/bot"+my_secret+"/sendMessage?chat_id="+groupid+"&text="
 api_url_attendance_telegram = "https://api.telegram.org/bot"+my_secret+"/sendMessage"
 
+
 # Timetable fetching and scheduling function
 def time_table():
     global IST, googleSheetId_attendance
@@ -66,8 +67,9 @@ def schedule_timetable():
 
 
 def start_all():
-    global Cancel_Attendance_Remainder_Status
+    global Cancel_Attendance_Remainder_Status, Stop_All_Status
     Cancel_Attendance_Remainder_Status = False
+    Stop_All_Status = False
     # schedule for if_holiday function
     schedule.clear('if_holiday')
     schedule.every().day.at("18:30").do(if_holiday).tag("if_holiday")
@@ -75,8 +77,9 @@ def start_all():
 
 
 def stop_all():
-    global Cancel_Attendance_Remainder_Status
+    global Cancel_Attendance_Remainder_Status, Stop_All_Status
     Cancel_Attendance_Remainder_Status = False
+    Stop_All_Status = True
     cancel_all()
     schedule.clear('if_holiday')
     schedule.clear('goodmorning')
@@ -134,9 +137,10 @@ def good_morning():
     os.remove("sample_image.png")
 
 
-# Default value
+# Default value and making global
 if_today_is_holiday = False
 Cancel_Attendance_Remainder_Status = False
+Stop_All_Status = False
 
 
 # checking for whether today is holiday from google sheet
@@ -218,6 +222,8 @@ def reset_attendance_reminder(bot, context):
         bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as today is Holiday ❌')
     elif Cancel_Attendance_Remainder_Status:
         bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Cancel all function is Activated ❌')
+    elif Stop_All_Status:
+        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
     else:
         time_table()
         bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nAttendance Reminder Schedule Reset Successfully ✅')
@@ -236,20 +242,28 @@ def stopall(bot, context):
 def resetall(bot, context):
     if Cancel_Attendance_Remainder_Status:
         bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Cancel all function is Activated ❌')
+    elif Stop_All_Status:
+        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
     else:
         if_holiday()
         bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Holiday status Successfully 👍\n2. Attendance Reminder Schedule Successfully 👍\n3. Scheduled Timetable Alternative check Successfully 👍')
 
 
 def cancelall(bot, context):
-    cancel_all()
-    bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nCancelled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
+    if Stop_All_Status:
+        bot.message.reply_text(
+            f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
+    else:
+        cancel_all()
+        bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nCancelled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
 
 
 def scheduleall(bot, context):
     global if_today_is_holiday
     if if_today_is_holiday:
         bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Schedule all as today is Holiday ❌')
+    elif Stop_All_Status:
+        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
     else:
         schedule_all()
         bot.message.reply_text(f'🌟  Hello,  {(bot.message.from_user.first_name)}\nScheduled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
