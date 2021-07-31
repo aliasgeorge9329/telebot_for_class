@@ -34,7 +34,7 @@ def time_table():
     data = list(new_sorted_data.to_dict(orient="records"))
     for each_slot in data:
         if str(each_slot[now_day]) != 'nan':
-            time_ = each_slot[now_day].split("/")[1].strip()
+            time_ = each_slot[now_day].split("/")[1].strip().split('|')[0]
             correct_time = str((dt.datetime.strptime(time_, "%H:%M") - dt.datetime.strptime('05:30', "%H:%M")))
             # For correcting UTC at 00:00 otherwise -1day,18:30
             if len(correct_time.split(',')) != 2:
@@ -46,11 +46,25 @@ def time_table():
                 hr = f'{int(correct_time.split(",")[1].split(":")[0]):02d}'
                 time_ = f'{hr}:{correct_time.split(",")[1].split(":")[1]}'
 
-            if len(each_slot[now_day].split("/")) == 2:
-                exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","")).tag("attendance")')
+            if len(each_slot[now_day].split("|")) == 2:
+                # For Class Link Included
+                Meet_link = each_slot[now_day].split("|")[1].strip()
+                Attendance_data = each_slot[now_day].split("|")[0].strip()
+                if len(Attendance_data.split("/")) == 2:
+                    # For Class Link only Included
+                    exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","","{Meet_link}")).tag("attendance")')
+                else:
+                    # For Class Link and Attendance Link Included
+                    exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","{"/".join(Attendance_data.split("|")[0].split("/")[2:]).strip()}","{Meet_link}")).tag("attendance")')
             else:
-                exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("/")[2:]).strip()}")).tag("attendance")')
-                
+                # For Class Link Included
+                if len(each_slot[now_day].split("/")) == 2:
+                    # For Attendance Link not Included will be default
+                    exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","","")).tag("attendance")')
+                else:
+                    # For Attendance Link only Included
+                    exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("|")[0].split("/")[2:]).strip()}","")).tag("attendance")')
+
 
 # Updating timetable and checking before each session
 def schedule_timetable():
@@ -193,19 +207,38 @@ def if_holiday():
 
 
 # Function to pass attendance message
-def attendance(sub, url_):
+def attendance(sub, url_, meet_link):
     if url_ != '':
         pass
     else:
         url_ = 'https://eduserver.nitc.ac.in/'
-    
-    params = {
-        'chat_id': '-1001576827434',
-        'parse_mode': 'HTML',
-        'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
-        'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Click Here For The Link!'}]]}, separators=(',', ':'))
-    } 
-    requests.get(api_url_attendance_telegram, params=params)
+
+    if meet_link == '' and url_ != 'no':
+        params = {
+            'chat_id': '-1001576827434',
+            'parse_mode': 'HTML',
+            'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
+            'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Attendance Link !'}]]}, separators=(',', ':'))
+        }
+        requests.get(api_url_attendance_telegram, params=params)
+
+    elif meet_link != '' and url_ == 'no':
+        params = {
+            'chat_id': '-1001576827434',
+            'parse_mode': 'HTML',
+            'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
+            'reply_markup': json.dumps({'inline_keyboard': [[{'url': meet_link, 'text': 'Class Link!'}]]}, separators=(',', ':'))
+        }
+        requests.get(api_url_attendance_telegram, params=params)
+
+    elif meet_link != '' and url_ != 'no':
+        params = {
+            'chat_id': '-1001576827434',
+            'parse_mode': 'HTML',
+            'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
+            'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Attendance Link !'}, {'url': meet_link, 'text': 'Class Link !'}]]}, separators=(',', ':'))
+        }
+        requests.get(api_url_attendance_telegram, params=params)
 
 
 # For starting functions at the time of Deploying
