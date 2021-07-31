@@ -208,14 +208,16 @@ def if_holiday():
 
 # Function to pass attendance message
 def attendance(sub, url_, meet_link):
+    # Defaulting attendance url to Home page
     if url_ != '':
         pass
     else:
         url_ = 'https://eduserver.nitc.ac.in/'
 
     if meet_link == '' and url_ != 'no':
+        # Only Attendance Link
         params = {
-            'chat_id': '-1001576827434',
+            'chat_id': groupid,
             'parse_mode': 'HTML',
             'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
             'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Attendance Link !'}]]}, separators=(',', ':'))
@@ -223,17 +225,19 @@ def attendance(sub, url_, meet_link):
         requests.get(api_url_attendance_telegram, params=params)
 
     elif meet_link != '' and url_ == 'no':
+        # Only Class Link
         params = {
-            'chat_id': '-1001576827434',
+            'chat_id': groupid,
             'parse_mode': 'HTML',
-            'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
+            'text': f'Guys join the <b>{sub}</b> class\n👇',
             'reply_markup': json.dumps({'inline_keyboard': [[{'url': meet_link, 'text': 'Class Link!'}]]}, separators=(',', ':'))
         }
         requests.get(api_url_attendance_telegram, params=params)
 
     elif meet_link != '' and url_ != 'no':
+        # Both Attendance and Class Link
         params = {
-            'chat_id': '-1001576827434',
+            'chat_id': groupid,
             'parse_mode': 'HTML',
             'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
             'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Attendance Link !'}, {'url': meet_link, 'text': 'Class Link !'}]]}, separators=(',', ':'))
