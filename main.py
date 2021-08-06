@@ -17,6 +17,9 @@ groupid = os.environ['__groupid__'].strip()
 googleSheetId_attendance = os.environ['Attendance'].strip()
 googleSheetId_images = os.environ['Images'].strip()
 googleSheetId_holiday = os.environ['Holiday'].strip()
+googleSheetId_birthday = os.environ['Birthday'].strip()
+googleSheetId_birthday_images = os.environ['Birthday_Images'].strip()
+
 api_url_telegram = "https://api.telegram.org/bot"+my_secret+"/sendMessage?chat_id="+groupid+"&text="
 api_url_attendance_telegram = "https://api.telegram.org/bot"+my_secret+"/sendMessage"
 
@@ -204,6 +207,61 @@ def if_holiday():
         if not Cancel_Attendance_Remainder_Status:
             time_table()
             schedule_timetable()
+
+    # Calling birthday_notifier
+    if now.strftime("%H:%M") == '00:00' or now.strftime("%H:%M") == '00:01':
+        birthday_notifier()
+
+
+def birthday_notifier():
+    today = (int(dt.datetime.now(IST).strftime("%d")), int(dt.datetime.now(IST).strftime("%m")))
+    # Getting The Data from the Google Sheet to Pandas DataframeWork
+    worksheetName_birthday = 'A_BATCH_BIRTHDAY'
+    URL = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(
+        googleSheetId_birthday,
+        worksheetName_birthday
+    )
+    data_list_birthday = pd.read_csv(URL)
+    data_birthday = list(data_list_birthday.to_dict(orient="records"))
+    mail_list = []
+    message = '🎊 🎊 🎊 🎊 🎊 🎊 🎊 🎊\n\nHappy Birthday '
+    # Choosing image no as the date
+    image_to_sent = int(today[0])
+    for each in data_birthday:
+        if str(each["BIRTHDAY"]) != 'nan':
+            date = each["BIRTHDAY"]
+            date_tuple = (int(date.split("/")[0]), int(date.split("/")[1]))
+            if date_tuple == today:
+                mail_list.append(each)
+            else:
+                continue
+
+    # Adding , between names if more students birthday in a single day
+    if len(mail_list) > 1:
+        for each_data in mail_list[1:]:
+            each_data["NAME"] = f', {each_data["NAME"]}'
+    # Compiling name to a single message as name1, name2, name3 etc
+
+    for each_data in mail_list:
+        message += f'{each_data["NAME"].title()}'
+    message += '\n\n🎊 🎊 🎊 🎊 🎊 🎊 🎊 🎊'
+    # Fetching the image to be sent
+    worksheetName_birthday_images_url = 'A_batch_Birthday_images_url'
+    URL = "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}".format(googleSheetId_birthday_images, worksheetName_birthday_images_url)
+    list_images_url = list(pd.read_csv(URL)["FILE ID"])
+    file_id_birthday = list_images_url[image_to_sent-1]
+    url = 'https://drive.google.com/uc?id=' + file_id_birthday.split('/')[5]
+    page = requests.get(url)
+    file = open("birthday_image.png", "wb")
+    file.write(page.content)
+    file.close()
+    files = {
+        'photo': open("birthday_image.png", "rb")
+    }
+    requests.get(
+        f"https://api.telegram.org/bot" + my_secret + "/sendPhoto?chat_id=" + groupid + f"&caption={message}",
+        files=files)
+    os.remove("birthday_image.png")
 
 
 # Function to pass attendance message
