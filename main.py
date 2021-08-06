@@ -235,33 +235,33 @@ def birthday_notifier():
                 mail_list.append(each)
             else:
                 continue
+    if len(mail_list) != 0:
+        # Adding , between names if more students birthday in a single day
+        if len(mail_list) > 1:
+            for each_data in mail_list[1:]:
+                each_data["NAME"] = f', {each_data["NAME"]}'
+        # Compiling name to a single message as name1, name2, name3 etc
 
-    # Adding , between names if more students birthday in a single day
-    if len(mail_list) > 1:
-        for each_data in mail_list[1:]:
-            each_data["NAME"] = f', {each_data["NAME"]}'
-    # Compiling name to a single message as name1, name2, name3 etc
-
-    for each_data in mail_list:
-        message += f'{each_data["NAME"].title()}'
-    message += '\n\n🎊 🎊 🎊 🎊 🎊 🎊 🎊 🎊'
-    # Fetching the image to be sent
-    worksheetName_birthday_images_url = 'A_batch_Birthday_images_url'
-    URL = "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}".format(googleSheetId_birthday_images, worksheetName_birthday_images_url)
-    list_images_url = list(pd.read_csv(URL)["FILE ID"])
-    file_id_birthday = list_images_url[image_to_sent-1]
-    url = 'https://drive.google.com/uc?id=' + file_id_birthday.split('/')[5]
-    page = requests.get(url)
-    file = open("birthday_image.png", "wb")
-    file.write(page.content)
-    file.close()
-    files = {
-        'photo': open("birthday_image.png", "rb")
-    }
-    requests.get(
-        f"https://api.telegram.org/bot" + my_secret + "/sendPhoto?chat_id=" + groupid + f"&caption={message}",
-        files=files)
-    os.remove("birthday_image.png")
+        for each_data in mail_list:
+            message += f'{each_data["NAME"].title()}'
+        message += '\n\n🎊 🎊 🎊 🎊 🎊 🎊 🎊 🎊'
+        # Fetching the image to be sent
+        worksheetName_birthday_images_url = 'A_batch_Birthday_images_url'
+        URL = "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}".format(googleSheetId_birthday_images, worksheetName_birthday_images_url)
+        list_images_url = list(pd.read_csv(URL)["FILE ID"])
+        file_id_birthday = list_images_url[image_to_sent-1]
+        url = 'https://drive.google.com/uc?id=' + file_id_birthday.split('/')[5]
+        page = requests.get(url)
+        file = open("birthday_image.png", "wb")
+        file.write(page.content)
+        file.close()
+        files = {
+            'photo': open("birthday_image.png", "rb")
+        }
+        requests.get(
+            f"https://api.telegram.org/bot" + my_secret + "/sendPhoto?chat_id=" + groupid + f"&caption={message}",
+            files=files)
+        os.remove("birthday_image.png")
 
 
 # Function to pass attendance message
