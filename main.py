@@ -8,7 +8,10 @@ import pytz
 from telegram.ext import *
 import threading
 import logging
+import traceback
 import json
+
+
 IST = pytz.timezone('Asia/Kolkata')
 
 # Secrets for the program
@@ -20,8 +23,8 @@ googleSheetId_holiday = os.environ['Holiday'].strip()
 googleSheetId_birthday = os.environ['Birthday'].strip()
 googleSheetId_birthday_images = os.environ['Birthday_Images'].strip()
 
-api_url_telegram = "https://api.telegram.org/bot"+my_secret+"/sendMessage?chat_id="+groupid+"&text="
-api_url_attendance_telegram = "https://api.telegram.org/bot"+my_secret+"/sendMessage"
+api_url_telegram = "https://api.telegram.org/bot" + my_secret + "/sendMessage?chat_id=" + groupid + "&text="
+api_url_attendance_telegram = "https://api.telegram.org/bot" + my_secret + "/sendMessage"
 
 
 # Timetable fetching and scheduling function
@@ -31,7 +34,8 @@ def time_table():
     now = dt.datetime.now(IST)
     now_day = now.strftime("%A").upper()
     worksheetName = 'time_table'
-    URL = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(googleSheetId_attendance, worksheetName)
+    URL = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(googleSheetId_attendance,
+                                                                                            worksheetName)
     data_list = pd.read_csv(URL)
     new_sorted_data = data_list[['SLOT', now_day]]
     data = list(new_sorted_data.to_dict(orient="records"))
@@ -45,7 +49,7 @@ def time_table():
                 hr = f'{int(correct_time.split(":")[0]):02d}'
                 time_ = f'{hr}:{correct_time.split(":")[1]}'
             else:
-                day_ = (now-dt.timedelta(days=1)).strftime('%A')
+                day_ = (now - dt.timedelta(days=1)).strftime('%A')
                 hr = f'{int(correct_time.split(",")[1].split(":")[0]):02d}'
                 time_ = f'{hr}:{correct_time.split(",")[1].split(":")[1]}'
 
@@ -55,18 +59,22 @@ def time_table():
                 Attendance_data = each_slot[now_day].split("|")[0].strip()
                 if len(Attendance_data.split("/")) == 2:
                     # For Class Link only Included
-                    exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","","{Meet_link}")).tag("attendance")')
+                    exec(
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","","{Meet_link}")).tag("attendance")')
                 else:
                     # For Class Link and Attendance Link Included
-                    exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","{"/".join(Attendance_data.split("|")[0].split("/")[2:]).strip()}","{Meet_link}")).tag("attendance")')
+                    exec(
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","{"/".join(Attendance_data.split("|")[0].split("/")[2:]).strip()}","{Meet_link}")).tag("attendance")')
             else:
                 # For Class Link Included
                 if len(each_slot[now_day].split("/")) == 2:
                     # For Attendance Link not Included will be default
-                    exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","","")).tag("attendance")')
+                    exec(
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","","")).tag("attendance")')
                 else:
                     # For Attendance Link only Included
-                    exec(f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("|")[0].split("/")[2:]).strip()}","")).tag("attendance")')
+                    exec(
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("|")[0].split("/")[2:]).strip()}","")).tag("attendance")')
 
 
 # Updating timetable and checking before each session
@@ -114,13 +122,13 @@ def schedule_all():
     global Cancel_Attendance_Remainder_Status
     Cancel_Attendance_Remainder_Status = False
     time_table()
-    schedule_timetable()    
+    schedule_timetable()
 
 
 # Function to sent any message
 def send_message_telegram(message):
     final_telegram_url = api_url_telegram + message
-    requests.get(final_telegram_url) 
+    requests.get(final_telegram_url)
 
 
 # Function to greet goodmorning with random images from google drive    
@@ -130,28 +138,31 @@ def good_morning():
         data = file.readlines()
         no = data[0]
     worksheetName = 'images_url'
-    URL = "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}".format(googleSheetId_images, worksheetName)
+    URL = "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}".format(googleSheetId_images,
+                                                                                            worksheetName)
     data_list = list(pd.read_csv(URL)["FILE ID"])
 
     if no == "100":
         with open("no.txt", "w") as f:
             f.write("0")
-    
+
     file_id = data_list[int(no)].split('/')[5]
-    
+
     with open("no.txt", "w") as f:
         new_num = int(no) + 1
-        f.write(str(new_num))    
+        f.write(str(new_num))
 
-    url = 'https://drive.google.com/uc?id='+file_id
+    url = 'https://drive.google.com/uc?id=' + file_id
     page = requests.get(url)
     file = open("sample_image.png", "wb")
     file.write(page.content)
     file.close()
     files = {
-      'photo': open("sample_image.png", "rb")
+        'photo': open("sample_image.png", "rb")
     }
-    requests.get(f"https://api.telegram.org/bot"+my_secret+"/sendPhoto?chat_id="+groupid+"&caption=Good Morning!", files=files)
+    requests.get(
+        f"https://api.telegram.org/bot" + my_secret + "/sendPhoto?chat_id=" + groupid + "&caption=Good Morning!",
+        files=files)
     os.remove("sample_image.png")
 
 
@@ -172,7 +183,8 @@ def if_holiday():
     now = dt.datetime.now(IST)
     now_day = now.strftime("%d/%m/%y")
     worksheet = 'holiday'
-    URL_holiday = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(googleSheetId_holiday, worksheet)
+    URL_holiday = 'https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}'.format(
+        googleSheetId_holiday, worksheet)
     holiday_dates_list = pd.read_csv(URL_holiday)
     dates = list(holiday_dates_list["HOLIDAY"])
     if now_day in dates:
@@ -247,9 +259,10 @@ def birthday_notifier():
         message += '\n\n🎊 🎊 🎊 🎊 🎊 🎊 🎊 🎊'
         # Fetching the image to be sent
         worksheetName_birthday_images_url = 'A_batch_Birthday_images_url'
-        URL = "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}".format(googleSheetId_birthday_images, worksheetName_birthday_images_url)
+        URL = "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:csv&sheet={1}".format(
+            googleSheetId_birthday_images, worksheetName_birthday_images_url)
         list_images_url = list(pd.read_csv(URL)["FILE ID"])
-        file_id_birthday = list_images_url[image_to_sent-1]
+        file_id_birthday = list_images_url[image_to_sent - 1]
         url = 'https://drive.google.com/uc?id=' + file_id_birthday.split('/')[5]
         page = requests.get(url)
         file = open("birthday_image.png", "wb")
@@ -278,7 +291,8 @@ def attendance(sub, url_, meet_link):
             'chat_id': groupid,
             'parse_mode': 'HTML',
             'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
-            'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Attendance Link !'}]]}, separators=(',', ':'))
+            'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Attendance Link !'}]]},
+                                       separators=(',', ':'))
         }
         requests.get(api_url_attendance_telegram, params=params)
 
@@ -288,7 +302,8 @@ def attendance(sub, url_, meet_link):
             'chat_id': groupid,
             'parse_mode': 'HTML',
             'text': f'Guys join the <b>{sub}</b> class\n👇',
-            'reply_markup': json.dumps({'inline_keyboard': [[{'url': meet_link, 'text': 'Class Link!'}]]}, separators=(',', ':'))
+            'reply_markup': json.dumps({'inline_keyboard': [[{'url': meet_link, 'text': 'Class Link!'}]]},
+                                       separators=(',', ':'))
         }
         requests.get(api_url_attendance_telegram, params=params)
 
@@ -298,7 +313,9 @@ def attendance(sub, url_, meet_link):
             'chat_id': groupid,
             'parse_mode': 'HTML',
             'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
-            'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Attendance Link !'}, {'url': meet_link, 'text': 'Class Link !'}]]}, separators=(',', ':'))
+            'reply_markup': json.dumps({'inline_keyboard': [
+                [{'url': url_, 'text': 'Attendance Link !'}, {'url': meet_link, 'text': 'Class Link !'}]]},
+                                       separators=(',', ':'))
         }
         requests.get(api_url_attendance_telegram, params=params)
 
@@ -321,8 +338,11 @@ def reset_attendance_reminder(bot, context):
     elif Stop_All_Status:
         bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
     else:
-        time_table()
-        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nAttendance Reminder Schedule Reset Successfully ✅')
+        try:
+            time_table()
+            bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nAttendance Reminder Schedule Reset Successfully ✅')
+        except Exception:
+            bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry,There was some error occurred 👇\n{traceback.format_exc()} \n❌')
 
 
 def startall(bot, context):
@@ -337,31 +357,39 @@ def stopall(bot, context):
 
 def resetall(bot, context):
     if Cancel_Attendance_Remainder_Status:
-        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Cancel all function is Activated ❌')
+        bot.message.reply_text(
+            f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Cancel all function is Activated ❌')
     elif Stop_All_Status:
-        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
+        bot.message.reply_text(
+            f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
     else:
         if_holiday()
-        bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Holiday status Successfully 👍\n2. Attendance Reminder Schedule Successfully 👍\n3. Scheduled Timetable Alternative check Successfully 👍')
+        bot.message.reply_text(
+            f'💫  Hello,  {(bot.message.from_user.first_name)}\nReset\n1. Holiday status Successfully 👍\n2. Attendance Reminder Schedule Successfully 👍\n3. Scheduled Timetable Alternative check Successfully 👍')
 
 
 def cancelall(bot, context):
     if Stop_All_Status:
-        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
+        bot.message.reply_text(
+            f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
     else:
         cancel_all()
-        bot.message.reply_text(f'💫  Hello,  {(bot.message.from_user.first_name)}\nCancelled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
+        bot.message.reply_text(
+            f'💫  Hello,  {(bot.message.from_user.first_name)}\nCancelled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
 
 
 def scheduleall(bot, context):
     global if_today_is_holiday
     if if_today_is_holiday:
-        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Schedule all as today is Holiday ❌')
+        bot.message.reply_text(
+            f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Schedule all as today is Holiday ❌')
     elif Stop_All_Status:
-        bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
+        bot.message.reply_text(
+            f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry, Cannot Reset as Stop all function is Activated ❌')
     else:
         schedule_all()
-        bot.message.reply_text(f'🌟  Hello,  {(bot.message.from_user.first_name)}\nScheduled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
+        bot.message.reply_text(
+            f'🌟  Hello,  {(bot.message.from_user.first_name)}\nScheduled\n1. Attendance Reminder Successfully 👍\n2. Timetable Alternative check Successfully 👍')
 
 
 def error(update, context):
@@ -394,7 +422,7 @@ def loop_():
     while True:
         schedule.run_pending()
         time.sleep(1)
-  
+
 
 if __name__ == "__main__":
     # creating thread
