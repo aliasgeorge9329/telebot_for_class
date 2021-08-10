@@ -60,21 +60,36 @@ def time_table():
                 if len(Attendance_data.split("/")) == 2:
                     # For Class Link only Included
                     exec(
-                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","","{Meet_link}")).tag("attendance")')
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","","{Meet_link}","")).tag("attendance")')
                 else:
                     # For Class Link and Attendance Link Included
                     exec(
-                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","{"/".join(Attendance_data.split("|")[0].split("/")[2:]).strip()}","{Meet_link}")).tag("attendance")')
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","{"/".join(Attendance_data.split("|")[0].split("/")[2:]).strip()}","{Meet_link}","")).tag("attendance")')
+
+            elif len(each_slot[now_day].split("|")) == 3:
+                # For Class Link and password for meet Included
+                Meet_link = each_slot[now_day].split("|")[1].strip()
+                password = each_slot[now_day].split("|")[2].strip()
+                Attendance_data = each_slot[now_day].split("|")[0].strip()
+                if len(Attendance_data.split("/")) == 2:
+                    # For Class Link only Included
+                    exec(
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","","{Meet_link}","{password}")).tag("attendance")')
+                else:
+                    # For Class Link and Attendance Link Included
+                    exec(
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{Attendance_data.split("/")[0].strip()}","{"/".join(Attendance_data.split("|")[0].split("/")[2:]).strip()}","{Meet_link}","{password}")).tag("attendance")')
+
             else:
                 # For Class Link Included
                 if len(each_slot[now_day].split("/")) == 2:
                     # For Attendance Link not Included will be default
                     exec(
-                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","","")).tag("attendance")')
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","","","")).tag("attendance")')
                 else:
                     # For Attendance Link only Included
                     exec(
-                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("|")[0].split("/")[2:]).strip()}","")).tag("attendance")')
+                        f'schedule.every().{day_.lower()}.at("{time_}").do(lambda: attendance("{each_slot[now_day].split("/")[0].strip()}","{"/".join(each_slot[now_day].split("|")[0].split("/")[2:]).strip()}","","")).tag("attendance")')
 
 
 # Updating timetable and checking before each session
@@ -278,7 +293,7 @@ def birthday_notifier():
 
 
 # Function to pass attendance message
-def attendance(sub, url_, meet_link):
+def attendance(sub, url_, meet_link, password):
     # Defaulting attendance url to Home page
     if url_ != '':
         pass
@@ -290,7 +305,7 @@ def attendance(sub, url_, meet_link):
         params = {
             'chat_id': groupid,
             'parse_mode': 'HTML',
-            'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
+            'text': f'Guys Mark attendance for <b>{sub}</b>\n{password}\n👇',
             'reply_markup': json.dumps({'inline_keyboard': [[{'url': url_, 'text': 'Attendance Link !'}]]},
                                        separators=(',', ':'))
         }
@@ -301,7 +316,7 @@ def attendance(sub, url_, meet_link):
         params = {
             'chat_id': groupid,
             'parse_mode': 'HTML',
-            'text': f'Guys join the <b>{sub}</b> class\n👇',
+            'text': f'Guys join the <b>{sub}</b> class\n{password}\n👇',
             'reply_markup': json.dumps({'inline_keyboard': [[{'url': meet_link, 'text': 'Class Link!'}]]},
                                        separators=(',', ':'))
         }
@@ -312,7 +327,7 @@ def attendance(sub, url_, meet_link):
         params = {
             'chat_id': groupid,
             'parse_mode': 'HTML',
-            'text': f'Guys Mark attendance for <b>{sub}</b>\n👇',
+            'text': f'Guys Mark attendance for <b>{sub}</b>\n{password}\n👇',
             'reply_markup': json.dumps({'inline_keyboard': [
                 [{'url': url_, 'text': 'Attendance Link !'}, {'url': meet_link, 'text': 'Class Link !'}]]},
                                        separators=(',', ':'))
