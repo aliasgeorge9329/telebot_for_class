@@ -342,7 +342,7 @@ def reset_attendance_reminder(bot, context):
             time_table()
             bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nAttendance Reminder Schedule Reset Successfully ✅')
         except Exception:
-            bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry,There was some error occurred 👇\n{traceback.format_exc()} \n❌')
+            bot.message.reply_text(f'✨  Hello,  {(bot.message.from_user.first_name)}\nSorry,There was some error occurred. Please correct the timetable\n👇\n\n{traceback.format_exc()} \n❌')
 
 
 def startall(bot, context):
