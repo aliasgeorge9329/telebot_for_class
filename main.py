@@ -206,8 +206,9 @@ def if_holiday():
         if_today_is_holiday = True
 
     if if_today_is_holiday:
-        cancel_all()
-
+        schedule.clear('attendance')
+        schedule.clear('timetable')
+        
         if now.strftime("%H:%M") == '00:00':
             data_dict = list(holiday_dates_list.to_dict(orient="records"))[dates.index(now_day)]
             file_id_holiday = data_dict['FILEID']
