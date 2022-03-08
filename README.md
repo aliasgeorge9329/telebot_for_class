@@ -1,6 +1,6 @@
 # 🔥 Bot_for_myclass
 
-Bot Made for my class A batch ECE NITC, for helping my friends reminding marking attendance, wishing birthdays etc. There is separate code fopr whatsapp if you wish to recieve notifications on the whatsapp group.
+Bot Made for my class A batch ECE NITC, for helping my friends reminding marking attendance, wishing birthdays etc. There is a separate folder for whatsapp code if you wish to recieve notifications on the whatsapp group.
 
 ## Screenshots
 
